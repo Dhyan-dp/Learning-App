@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  password     String
+  role         Role         @default(STUDENT)
+  courses      Course[]     @relation("InstructorCourses")
+  enrolled     Enrollment[]
+  refreshToken String? // <- new field for storing refresh token
+  createdAt    DateTime     @default(now())
+}
+
+model Course {
+  id           String       @id @default(uuid())
+  title        String       @unique
+  description  String
+  category     String
+  published    Boolean      @default(false) // <-- Add this line
+  instructor   User         @relation("InstructorCourses", fields: [instructorId], references: [id])
+  instructorId String
+  sessions     Session[]
+  enrollments  Enrollment[]
+  createdAt    DateTime     @default(now())
+}
+
+model Session {
+  id       String @id @default(uuid())
+  title    String
+  videoUrl String
+  content  String // rich text
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String
+}
+
+model Enrollment {
+  id                String   @id @default(uuid())
+  student           User     @relation(fields: [studentId], references: [id])
+  studentId         String
+  course            Course   @relation(fields: [courseId], references: [id])
+  courseId          String
+  completedSessions String[] // list of completed session IDs
+  createdAt         DateTime @default(now())
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+}
